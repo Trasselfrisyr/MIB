@@ -60,14 +60,13 @@ HARDWARE NOTES:
 //_______________________________________________________________________________________________ DECLARATIONS
 
 #define ON_Thr 40       // Set threshold level before switching ON
-#define ON_Delay   20   // Set Delay after ON threshold before velocity is checked (wait for tounging peak)
 #define breath_max 300  // Upper limit for pressure
 #define CC_INTERVAL 10  // Interval for sending CC data
 
 unsigned long ccSendTime = 0L;     // The last time we sent CC values
 
 int pressureSensor;  // pressure data from breath sensor, for midi breath cc and breath threshold checks
-byte itsOn=0;        // keep track and make sure we send CC with 0 value when off thr
+byte itsOn=0;        // keep track and make sure we send CC with 0 value when off threshold
 
 byte x;
 byte LedPin=13;    // select the pin for the LED
@@ -86,7 +85,6 @@ void setup() {
     digitalWrite( LedPin, LOW );
     delay(300);
   }
-
 }
 
 
