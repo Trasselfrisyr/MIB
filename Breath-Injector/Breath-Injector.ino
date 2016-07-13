@@ -1,0 +1,131 @@
+#include <MIDI.h>
+#include <midi_Defs.h>
+#include <midi_Message.h>
+#include <midi_Namespace.h>
+#include <midi_Settings.h>
+
+MIDI_CREATE_DEFAULT_INSTANCE();
+
+/*
+NAME:                 MIB Breath Injector
+WRITTEN BY:           JOHAN BERGLUND
+DATE:                 2016-07-13
+FILE SAVED AS:        Breath-Injector.ino
+FOR:                  Arduino Pro Mini, ATmega328
+CLOCK:                16.00 MHz CRYSTAL                                        
+PROGRAMME FUNCTION:   Input MIDI, add breath controller data, output merged data to MIDI
+                      Freescale MPX5010GP breath sensor connected for breath control
+                      DIP switches for setting MIDI channel and for disconnecting RX line from MIDI 
+
+HARDWARE NOTES:
+* For the MIDI connection, attach a MIDI out Female 180 Degree 5-Pin DIN socket to Arduino.
+* Socket is seen from solder tags at rear.
+* 
+* DIN-5 pinout for MIDI output is:                         _______ 
+*    pin 2 - GND                                          /       \
+*    pin 4 - 220 ohm resistor to +5V                     | 1     3 |  MIDI jack
+*    pin 5 - Arduino Pin 1 (TX) via a 220 ohm resistor   |  4   5  |
+*    all other pins - unconnected                         \___2___/
+*    
+* DIN-5 pinout for MIDI input is:                          _______ 
+*    pin 2 - GND                                          /       \
+*    pin 4 - 220 ohm resistor to pin 2 of 6N139          | 1     3 |  MIDI jack
+*    pin 5 - to pin 3 of 6N139                           |  4   5  |
+*    all other pins - unconnected                         \___2___/
+*
+* 6N139 optocoupler connections:
+*    pin 8 - to +5V
+*    pin 7 - via 1k8 ohm resistor to GND
+*    pin 6 - to Arduino pin 0 (RX) via optional disconnection switch
+*    pin 5 - GND
+*    pin 4 - n/c
+*    pin 3 - MIDI jack pin 5
+*    pin 2 - MIDI jack pin 4 via 220 ohm resistor
+*    pin 1 - n/c
+*    also connected, a 1N4148 diode from pin 3 to pin 2, 
+*    a 1k8 ohm resistor between pins 6 and 8,
+*    and a 100 nF capacitor between pins 8 and 5
+*    
+* DIP switches connect pulled up inputs 4 through 7 to GND
+*      
+* The Freescale MPX5010GP pressure sensor output (V OUT) is connected to Arduino pin A3.
+* 
+* Sensor pinout
+* 1: V OUT (pin with indent)
+* 2: GND
+* 3: VCC (to 5V)    
+* 4: n/c
+* 5: n/c
+* 6: n/c
+*     
+* For a proper schematic of all this, see github repository at https://github.com/Trasselfrisyr/MIB/Breath-Injector/
+*/
+
+
+
+//_______________________________________________________________________________________________ DECLARATIONS
+
+#define ON_Thr 40       // Set threshold level before switching ON
+#define ON_Delay   20   // Set Delay after ON threshold before velocity is checked (wait for tounging peak)
+#define breath_max 300  // Upper limit for pressure
+#define CC_INTERVAL 15  // Interval for sending CC data
+
+unsigned long ccSendTime = 0L;     // The last time we sent CC values
+
+int pressureSensor;  // pressure data from breath sensor, for midi breath cc and breath threshold checks
+int breathLevel=0;   // breath level (smoothed) not mapped to CC value
+
+byte x;
+byte LedPin = 13;    // select the pin for the LED
+byte channel;        // MIDI channel
+
+//_______________________________________________________________________________________________ SETUP
+
+void setup() {
+  pinMode(LedPin,OUTPUT);
+  pinMode(4,INPUT_PULLUP);
+  pinMode(5,INPUT_PULLUP);
+  pinMode(6,INPUT_PULLUP);
+  pinMode(7,INPUT_PULLUP);
+  
+  channel=1 + digitalRead(4) + (digitalRead(5)<<1) + (digitalRead(6)<<2) + (digitalRead(7)<<3); // get MIDI channel from DIP switches
+
+  MIDI.begin(channel);
+  
+  for (x=1; x<=4; x++){  // Do the flashy-flashy to say we are up and running
+    digitalWrite( LedPin, HIGH );
+    delay(300);
+    digitalWrite( LedPin, LOW );
+    delay(300);
+  }
+
+}
+
+
+//_______________________________________________________________________________________________ MAIN LOOP
+
+void loop() {
+  MIDI.read();
+  pressureSensor=analogRead(A3);
+  if (pressureSensor > ON_Thr) {
+    // Value has risen above threshold. Send breath data.
+    // Is it time to send more CC data?
+    if (millis() - ccSendTime > CC_INTERVAL) {
+       // send CC
+       breath();
+       ccSendTime = millis();
+    }   
+  }  
+}
+
+//_______________________________________________________________________________________________ FUNCTIONS
+
+void breath(){
+  int breathCC;
+  breathLevel = breathLevel*0.8+pressureSensor*0.2; // smoothing of breathLevel value
+  breathCC = map(constrain(breathLevel,ON_Thr,breath_max),ON_Thr,breath_max,0,127);
+  digitalWrite(LedPin, HIGH);
+  MIDI.sendControlChange(2, breathCC, channel);
+  digitalWrite(LedPin, LOW);
+}
+//***********************************************************
