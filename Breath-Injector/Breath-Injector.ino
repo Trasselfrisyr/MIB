@@ -1,8 +1,4 @@
 #include <MIDI.h>
-#include <midi_Defs.h>
-#include <midi_Message.h>
-#include <midi_Namespace.h>
-#include <midi_Settings.h>
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 
@@ -15,7 +11,7 @@ FOR:                  Arduino Pro Mini, ATmega328
 CLOCK:                16.00 MHz CRYSTAL                                        
 PROGRAMME FUNCTION:   Input MIDI, add breath controller data, output merged data to MIDI
                       Freescale MPX5010GP breath sensor connected for breath control
-                      DIP switches for setting MIDI channel and for disconnecting RX line from MIDI 
+                      Optional dip switch for disconnecting RX line from MIDI 
 
 HARDWARE NOTES:
 * For the MIDI connection, attach a MIDI out Female 180 Degree 5-Pin DIN socket to Arduino.
@@ -45,8 +41,6 @@ HARDWARE NOTES:
 *    also connected, a 1N4148 diode from pin 3 to pin 2, 
 *    a 1k8 ohm resistor between pins 6 and 8,
 *    and a 100 nF capacitor between pins 8 and 5
-*    
-* DIP switches connect pulled up inputs 4 through 7 to GND
 *      
 * The Freescale MPX5010GP pressure sensor output (V OUT) is connected to Arduino pin A3.
 * 
@@ -68,27 +62,21 @@ HARDWARE NOTES:
 #define ON_Thr 40       // Set threshold level before switching ON
 #define ON_Delay   20   // Set Delay after ON threshold before velocity is checked (wait for tounging peak)
 #define breath_max 300  // Upper limit for pressure
-#define CC_INTERVAL 15  // Interval for sending CC data
+#define CC_INTERVAL 10  // Interval for sending CC data
 
 unsigned long ccSendTime = 0L;     // The last time we sent CC values
 
 int pressureSensor;  // pressure data from breath sensor, for midi breath cc and breath threshold checks
-int breathLevel=0;   // breath level (smoothed) not mapped to CC value
+byte itsOn=0;        // keep track and make sure we send CC with 0 value when off thr
 
 byte x;
-byte LedPin = 13;    // select the pin for the LED
-byte channel;        // MIDI channel
+byte LedPin=13;    // select the pin for the LED
+byte channel=1;    // MIDI channel
 
 //_______________________________________________________________________________________________ SETUP
 
 void setup() {
   pinMode(LedPin,OUTPUT);
-  pinMode(4,INPUT_PULLUP);
-  pinMode(5,INPUT_PULLUP);
-  pinMode(6,INPUT_PULLUP);
-  pinMode(7,INPUT_PULLUP);
-  
-  channel=1 + digitalRead(4) + (digitalRead(5)<<1) + (digitalRead(6)<<2) + (digitalRead(7)<<3); // get MIDI channel from DIP switches
 
   MIDI.begin(channel);
   
@@ -106,15 +94,16 @@ void setup() {
 
 void loop() {
   MIDI.read();
-  pressureSensor=analogRead(A3);
-  if (pressureSensor > ON_Thr) {
-    // Value has risen above threshold. Send breath data.
-    // Is it time to send more CC data?
-    if (millis() - ccSendTime > CC_INTERVAL) {
-       // send CC
-       breath();
-       ccSendTime = millis();
-    }   
+  if (millis() - ccSendTime > CC_INTERVAL) {
+   pressureSensor=analogRead(A3);
+   if (pressureSensor >= ON_Thr) {
+     breath();
+     ccSendTime = millis();
+     itsOn=1;
+    } else if (itsOn) {
+     breath();
+     itsOn=0;
+    }
   }  
 }
 
@@ -122,8 +111,7 @@ void loop() {
 
 void breath(){
   int breathCC;
-  breathLevel = breathLevel*0.8+pressureSensor*0.2; // smoothing of breathLevel value
-  breathCC = map(constrain(breathLevel,ON_Thr,breath_max),ON_Thr,breath_max,0,127);
+  breathCC = map(constrain(pressureSensor,ON_Thr,breath_max),ON_Thr,breath_max,0,127);
   digitalWrite(LedPin, HIGH);
   MIDI.sendControlChange(2, breathCC, channel);
   digitalWrite(LedPin, LOW);
