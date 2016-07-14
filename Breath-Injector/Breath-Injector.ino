@@ -62,6 +62,7 @@ HARDWARE NOTES:
 #define ON_Thr 40       // Set threshold level before switching ON
 #define breath_max 300  // Upper limit for pressure
 #define CC_INTERVAL 10  // Interval for sending CC data
+#define CC_Number 2     // Controller number (2=Breath, 1=Mod Wheel, 7=Volume, 11=Expression, 74=Cutoff)
 
 unsigned long ccSendTime = 0L;     // The last time we sent CC values
 
@@ -111,7 +112,7 @@ void breath(){
   int breathCC;
   breathCC = map(constrain(pressureSensor,ON_Thr,breath_max),ON_Thr,breath_max,0,127);
   digitalWrite(LedPin, HIGH);
-  MIDI.sendControlChange(2, breathCC, channel);
+  MIDI.sendControlChange(CC_Number, breathCC, channel);
   digitalWrite(LedPin, LOW);
 }
 //***********************************************************
