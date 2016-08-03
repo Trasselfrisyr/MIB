@@ -10,7 +10,7 @@ FILE SAVED AS:        Breath-Injector.ino
 FOR:                  Arduino Pro Mini, ATmega328
 CLOCK:                16.00 MHz CRYSTAL                                        
 PROGRAMME FUNCTION:   Input MIDI, add breath controller data, output merged data to MIDI
-                      Freescale MPX5010GP breath sensor connected for breath control
+                      Freescale MPXV5004GP breath sensor connected for breath control
                       Optional dip switch for disconnecting RX line from MIDI 
 
 HARDWARE NOTES:
@@ -42,15 +42,17 @@ HARDWARE NOTES:
 *    a 1k8 ohm resistor between pins 6 and 8,
 *    and a 100 nF capacitor between pins 8 and 5
 *      
-* The Freescale MPX5010GP pressure sensor output (V OUT) is connected to Arduino pin A3.
+* The Freescale MPXV5004GP pressure sensor output (V OUT) is connected to Arduino pin A3.
 * 
 * Sensor pinout
-* 1: V OUT (pin with indent)
-* 2: GND
-* 3: VCC (to 5V)    
-* 4: n/c
+* 1: n/c
+* 2: V OUT 
+* 3: GND
+* 4: VCC (to 5V)    
 * 5: n/c
 * 6: n/c
+* 7: n/c
+* 8: n/c
 *     
 * For a proper schematic of all this, see github repository at https://github.com/Trasselfrisyr/MIB/Breath-Injector/
 */
@@ -59,8 +61,8 @@ HARDWARE NOTES:
 
 //_______________________________________________________________________________________________ DECLARATIONS
 
-#define ON_Thr 40       // Set threshold level before switching ON
-#define breath_max 300  // Upper limit for pressure
+#define ON_Thr 300       // Set threshold level before switching ON
+#define breath_max 1023  // Upper limit for pressure
 #define CC_INTERVAL 10  // Interval for sending CC data
 #define CC_Number 2     // Controller number (2=Breath, 1=Mod Wheel, 7=Volume, 11=Expression, 74=Cutoff)
 
