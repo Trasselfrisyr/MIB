@@ -61,7 +61,7 @@ HARDWARE NOTES:
 
 //_______________________________________________________________________________________________ DECLARATIONS
 
-#define ON_Thr 300       // Set threshold level before switching ON
+#define ON_Thr 350       // Set threshold level before switching ON
 #define breath_max 1023  // Upper limit for pressure
 #define CC_INTERVAL 10  // Interval for sending CC data
 #define CC_Number 2     // Controller number (2=Breath, 1=Mod Wheel, 7=Volume, 11=Expression, 74=Cutoff)
