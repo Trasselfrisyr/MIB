@@ -43,6 +43,8 @@ HARDWARE NOTES:
 *    and a 100 nF capacitor between pins 8 and 5
 *      
 * The Freescale MPXV5004GP pressure sensor output (V OUT) is connected to Arduino pin A3.
+* Other 5V sensors can be used if thr/max values are altered or potentiometers installed.
+* Examples of other sensors suitable for use: Freescale MPX5010GP, MPXV4006GP
 * 
 * Sensor pinout
 * 1: n/c
@@ -54,26 +56,33 @@ HARDWARE NOTES:
 * 7: n/c
 * 8: n/c
 *     
-* For a proper schematic of all this, see github repository at https://github.com/Trasselfrisyr/MIB/Breath-Injector/
+* Optional potentiometers for adjusting values for threshold and max breath are connected to
+* analog inputs A0 and A1.
+*     
+* For a proper schematic of this, see github repository at https://github.com/Trasselfrisyr/MIB/Breath-Injector/
 */
 
 
 
 //_______________________________________________________________________________________________ DECLARATIONS
 
-#define ON_Thr 350       // Set threshold level before switching ON
-#define breath_max 1023  // Upper limit for pressure
-#define CC_INTERVAL 10  // Interval for sending CC data
+
+#define CC_Interval 10  // Interval for sending CC data
 #define CC_Number 2     // Controller number (2=Breath, 1=Mod Wheel, 7=Volume, 11=Expression, 74=Cutoff)
+#define AT_Enable 1     // Send breath as channel aftertouch (0=Off, 1=On, 2=Exclusively)
+#define POT_Avail 1     // Potentiometers installed at A0 and A1?
 
 unsigned long ccSendTime = 0L;     // The last time we sent CC values
 
-int pressureSensor;  // pressure data from breath sensor, for midi breath cc and breath threshold checks
+int pressureSensor=0;  // pressure data from breath sensor, for midi breath cc and breath threshold checks
 byte itsOn=0;        // keep track and make sure we send CC with 0 value when off threshold
+int ON_Thr=350;      // Set threshold level before switching ON (value to use if no pots installed, suits MPXV5004GP)
+int breath_max=1023; // Upper limit for pressure (value to use if no pots installed, suits MPXV5004GP)
 
 byte x;
 byte LedPin=13;    // select the pin for the LED
 byte channel=1;    // MIDI channel
+float smooth=0.05; // smoothing value
 
 //_______________________________________________________________________________________________ SETUP
 
@@ -94,17 +103,24 @@ void setup() {
 //_______________________________________________________________________________________________ MAIN LOOP
 
 void loop() {
+  if (POT_Avail) {
+    ON_Thr=map(analogRead(A0),0,1023,0,850);  // set threshold value with potentiometer on A0
+    breath_max=map(analogRead(A1),0,1023,150,1023); // set max value with potentiometer on A1
+    if ((ON_Thr+127) > breath_max){            // make sure max value always has a minimum offset from thr
+      breath_max=ON_Thr+127;
+    }
+  }
+  pressureSensor=pressureSensor*(1-smooth)+analogRead(A3)*smooth;   // get pressure sensor data, do some smoothing
   MIDI.read();
-  if (millis() - ccSendTime > CC_INTERVAL) {
-   pressureSensor=analogRead(A3);
-   if (pressureSensor >= ON_Thr) {
-     breath();
-     ccSendTime = millis();
+  if (millis() - ccSendTime > CC_Interval) {  // is it time for sending breath data?
+   if (pressureSensor >= ON_Thr) {            // if we are over the threshold, send breath
+     breath();    
      itsOn=1;
-    } else if (itsOn) {
-     breath();
+    } else if (itsOn) {                       // we have just gone below threshold, so send zero value
+     breathOff();
      itsOn=0;
     }
+    ccSendTime = millis();                   // reset cc timer
   }  
 }
 
@@ -112,9 +128,26 @@ void loop() {
 
 void breath(){
   int breathCC;
-  breathCC = map(constrain(pressureSensor,ON_Thr,breath_max),ON_Thr,breath_max,0,127);
+  breathCC = map(constrain(pressureSensor,ON_Thr,breath_max),ON_Thr,breath_max,1,127);
   digitalWrite(LedPin, HIGH);
-  MIDI.sendControlChange(CC_Number, breathCC, channel);
+  if (AT_Enable != 2) {
+    MIDI.sendControlChange(CC_Number, breathCC, channel);
+  }
+  if (AT_Enable) {
+    MIDI.sendAfterTouch(breathCC, channel);
+  }
   digitalWrite(LedPin, LOW);
 }
+
 //***********************************************************
+
+void breathOff(){
+  digitalWrite(LedPin, HIGH);
+  if (AT_Enable != 2) {
+    MIDI.sendControlChange(CC_Number, 0, channel);
+  }
+  if (AT_Enable) {
+    MIDI.sendAfterTouch(0, channel);
+  }
+  digitalWrite(LedPin, LOW);
+}
