@@ -20,7 +20,7 @@ Optional power circuit:
 
 Battery holder 16340
 Li-Ion battery 3.7V 16340
-All-in-one charge and step-up board (r.ebay.com-uWUNOm)
+All-in-one charge and step-up board (r.ebay.com/uWUNOm)
 
 VOUT +/- connects to PWR +/- of main circuit via a switch.
 VIN +/- connects to panel mount power jack for 5V input.
