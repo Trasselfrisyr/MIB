@@ -1,17 +1,18 @@
-#include <MIDI.h>
+#include <MIDI.h> //FortySevenEffects Arduino MIDI Library
+// Also requires Arcore Arduino core for USB MIDI
 
-MIDI_CREATE_DEFAULT_INSTANCE();
+MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 
 /*
 NAME:                 MIB Breath Injector
 WRITTEN BY:           JOHAN BERGLUND
 DATE:                 2016-07-13
 FILE SAVED AS:        Breath-Injector.ino
-FOR:                  Arduino Pro Mini, ATmega328
-CLOCK:                16.00 MHz CRYSTAL                                        
+FOR:                  Arduino Pro Micro, ATmega32U4
+CLOCK:                16.00 MHz                                        
 PROGRAMME FUNCTION:   Input MIDI, add breath controller data, output merged data to MIDI
                       Freescale MPXV5004GP breath sensor connected for breath control
-                      Optional dip switch for disconnecting RX line from MIDI 
+                      Controller data also output on USB MIDI
 
 HARDWARE NOTES:
 * For the MIDI connection, attach a MIDI out Female 180 Degree 5-Pin DIN socket to Arduino.
@@ -74,29 +75,31 @@ HARDWARE NOTES:
 
 unsigned long ccSendTime = 0L;     // The last time we sent CC values
 
-int pressureSensor=0;  // pressure data from breath sensor, for midi breath cc and breath threshold checks
+int pressureSensor=0;// pressure data from breath sensor, for midi breath cc and breath threshold checks
 byte itsOn=0;        // keep track and make sure we send CC with 0 value when off threshold
-int ON_Thr=350;      // Set threshold level before switching ON (value to use if no pots installed, suits MPXV5004GP)
-int breath_max=1023; // Upper limit for pressure (value to use if no pots installed, suits MPXV5004GP)
+int ON_Thr=350;      // Set threshold level before switching ON (Value used if no pots installed. MPXV5004GP->350, MPX5010GP->40)
+int breath_max=1023; // Upper limit for pressure (Value used if no pots installed. MPXV5004GP->1023, MPX5010GP->300)
 
-byte x;
-byte LedPin=18;    // select the pin for the LED
-byte channel=1;    // MIDI channel
-float smooth=0.03; // smoothing value
+int x;
+byte LedPin=5;    // select the pin for the activity LED
+byte PwrLedPin=6; // select the pin for the power LED
+byte channel=1;    // MIDI channel (1-16)
+float smooth=0.05; // smoothing value
 
 //_______________________________________________________________________________________________ SETUP
 
 void setup() {
   pinMode(LedPin,OUTPUT);
-
+  pinMode(2,OUTPUT);
+  digitalWrite(2,LOW); // set pin 2 low to enable DIN MIDI on MIB mkII board
+  
   MIDI.begin(channel);
   
-  for (x=1; x<=4; x++){  // Do the flashy-flashy to say we are up and running
-    digitalWrite( LedPin, HIGH );
-    delay(300);
-    digitalWrite( LedPin, LOW );
-    delay(300);
+  for (x=1; x<=255; x++){  // Fade in power LED for extra class and swag
+    analogWrite( PwrLedPin, x );
+    delay(10);
   }
+
 }
 
 
@@ -129,25 +132,40 @@ void loop() {
 void breath(){
   int breathCC;
   breathCC = map(constrain(pressureSensor,ON_Thr,breath_max),ON_Thr,breath_max,1,127);
-  digitalWrite(LedPin, HIGH);
   if (AT_Enable != 2) {
     MIDI.sendControlChange(CC_Number, breathCC, channel);
+    controlChange(channel-1, CC_Number, breathCC);
   }
   if (AT_Enable) {
     MIDI.sendAfterTouch(breathCC, channel);
+    channelAT(channel-1, breathCC);
   }
-  digitalWrite(LedPin, LOW);
+  analogWrite(LedPin, breathCC);
 }
 
 //***********************************************************
 
 void breathOff(){
-  digitalWrite(LedPin, HIGH);
   if (AT_Enable != 2) {
     MIDI.sendControlChange(CC_Number, 0, channel);
+    controlChange(channel-1, CC_Number, 0);
   }
   if (AT_Enable) {
     MIDI.sendAfterTouch(0, channel);
+    channelAT(channel-1, 0);
   }
   digitalWrite(LedPin, LOW);
+}
+
+//***********************************************************
+// Arcore MIDI functions
+
+void controlChange(byte channel, byte control, byte value) {
+  MIDIEvent event = {0x0B, 0xB0 | channel, control, value};
+  MIDIUSB.write(event);
+}
+
+void channelAT(byte channel, byte value) {
+  MIDIEvent event = {0x0D, 0xD0 | channel, value};
+  MIDIUSB.write(event);
 }
