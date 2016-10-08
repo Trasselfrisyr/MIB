@@ -88,6 +88,8 @@ float smooth=0.03; // smoothing value
 
 void setup() {
   pinMode(LedPin,OUTPUT);
+  pinMode(2,OUTPUT);
+  digitalWrite(2,LOW); // set pin 2 low to enable DIN MIDI on MIB mkII board
 
   MIDI.begin(channel);
   

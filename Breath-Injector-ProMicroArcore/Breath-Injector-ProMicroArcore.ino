@@ -7,7 +7,7 @@ MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 NAME:                 MIB Breath Injector
 WRITTEN BY:           JOHAN BERGLUND
 DATE:                 2016-07-13
-FILE SAVED AS:        Breath-Injector.ino
+FILE SAVED AS:        Breath-Injector-ProMicroArcore.ino
 FOR:                  Arduino Pro Micro, ATmega32U4
 CLOCK:                16.00 MHz                                        
 PROGRAMME FUNCTION:   Input MIDI, add breath controller data, output merged data to MIDI
@@ -59,8 +59,7 @@ HARDWARE NOTES:
 *     
 * Optional potentiometers for adjusting values for threshold and max breath are connected to
 * analog inputs A0 and A1.
-*     
-* For a proper schematic of this, see github repository at https://github.com/Trasselfrisyr/MIB/Breath-Injector/
+* 
 */
 
 
