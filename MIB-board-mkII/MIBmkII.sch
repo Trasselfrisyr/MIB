@@ -8400,7 +8400,7 @@ Audio, scart, microphone, headphone&lt;p&gt;
 </class>
 </classes>
 <parts>
-<part name="U$1" library="SparkFun-Boards" deviceset="ARDUINO_PRO_MICRO" device=""/>
+<part name="U$1" library="SparkFun-Boards" deviceset="ARDUINO_PRO_MICRO" device="" value="ARDUINO"/>
 <part name="IC1" library="74xx-eu" deviceset="74*125" device="N" technology="HC"/>
 <part name="OK1" library="optocoupler" deviceset="6N138" device=""/>
 <part name="R1" library="resistor" deviceset="R-EU_" device="0207/10" value="220"/>
@@ -8409,9 +8409,9 @@ Audio, scart, microphone, headphone&lt;p&gt;
 <part name="R4" library="resistor" deviceset="R-EU_" device="0207/10" value="2K2"/>
 <part name="R5" library="resistor" deviceset="R-EU_" device="0207/10" value="2K2"/>
 <part name="C1" library="rcl" deviceset="C-EU" device="075-032X103" value="100nF"/>
-<part name="D1" library="diode" deviceset="1N4148" device="DO35-10"/>
-<part name="X1" library="con-hirschmann" deviceset="MAB5SH" device=""/>
-<part name="X2" library="con-hirschmann" deviceset="MAB5SH" device=""/>
+<part name="D1" library="diode" deviceset="1N4148" device="DO35-10" value="1N4148"/>
+<part name="X1" library="con-hirschmann" deviceset="MAB5SH" device="" value=""/>
+<part name="X2" library="con-hirschmann" deviceset="MAB5SH" device="" value=""/>
 <part name="JP1" library="pinhead" deviceset="PINHD-1X1" device=""/>
 <part name="JP2" library="pinhead" deviceset="PINHD-1X1" device=""/>
 <part name="JP3" library="pinhead" deviceset="PINHD-1X1" device=""/>
